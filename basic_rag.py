@@ -1,7 +1,16 @@
+
+# import os
+
+# files = os.listdir("../Aihacks/txt_files")
+
+# print(files)
+
+
 # %%
 """
 # Setup
 """
+
 
 # %%
 # OctoAI
@@ -47,10 +56,10 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.schema import Document
 
 # %%
-files = os.listdir("../city_data")
+files = os.listdir("../Aihacks/txt_files")
 file_texts = []
 for file in files:
-    with open(f"../city_data/{file}") as f:
+    with open(f"../Aihacks/txt_files/{file}") as f:
         file_text = f.read()
     text_splitter = CharacterTextSplitter.from_tiktoken_encoder(
         chunk_size=512, chunk_overlap=64, 
@@ -93,7 +102,7 @@ retriever = vector_store.as_retriever()
 
 # %%
 from langchain.prompts import ChatPromptTemplate
-template="""You are a tour guide. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
+template="""You are a investment banker please give advice
 Question: {question} 
 Context: {context} 
 Answer:"""
@@ -110,6 +119,6 @@ chain = (
 )
 
 # %%
-chain.invoke("What is the worst metro line in Paris?")
+chain.invoke("What is microsofts outlook in 2025?")
 
 # %%
