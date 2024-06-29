@@ -70,8 +70,8 @@ for file in files:
                 metadata={"doc_title": file.split(".")[0], "chunk_num": i}))
 
 # %%
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import FAISS
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
 
 # %%
 embeddings = HuggingFaceEmbeddings()
@@ -102,7 +102,7 @@ retriever = vector_store.as_retriever()
 
 # %%
 from langchain.prompts import ChatPromptTemplate
-template="""You are a investment banker please give advice
+template="""You are a investment banker please give advice. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise
 Question: {question} 
 Context: {context} 
 Answer:"""
@@ -119,6 +119,6 @@ chain = (
 )
 
 # %%
-chain.invoke("What is microsofts outlook in 2025?")
+print(chain.invoke("What is microsofts outlook in 2025?"))
 
 # %%
