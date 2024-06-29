@@ -102,7 +102,7 @@ retriever = vector_store.as_retriever()
 
 # %%
 from langchain.prompts import ChatPromptTemplate
-template="""You are a investment banker please give advice. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise
+template="""You are a investment banker. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise
 Question: {question} 
 Context: {context} 
 Answer:"""
