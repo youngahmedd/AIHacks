@@ -20,25 +20,44 @@ CORS(app)
 load_dotenv()
 OCTOAI_API_TOKEN = os.environ["OCTOAI_API_TOKEN"]
 
-# PDF to text conversion function
-def pdf_to_text(pdf_path, txt_path):
-    with open(pdf_path, 'rb') as pdf_file:
-        pdf_reader = PyPDF2.PdfFileReader(pdf_file)
-        with open(txt_path, 'w') as text_file:
-            for page_num in range(pdf_reader.numPages):
-                page = pdf_reader.getPage(page_num)
-                text = page.extract_text()
-                text_file.write(text)
+# Function to scrape website for new links
+def scrape_website(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    # Assuming the links are in <a> tags
+    links = [a['href'] for a in soup.find_all('a', href=True)]
+    return links
 
-# Ingest data function
+# Function to fetch and save content of a link as a text file
+def fetch_and_save_content(link, output_path):
+    response = requests.get(link)
+    with open(output_path, 'w') as text_file:
+        text_file.write(response.text)
+
+# Function to convert text file content to embeddings and update FAISS
+def process_new_text_file(txt_path):
+    with open(txt_path, 'r') as file:
+        file_text = file.read()
+    
+    text_splitter = CharacterTextSplitter.from_tiktoken_encoder(
+        chunk_size=512, chunk_overlap=64
+    )
+    texts = text_splitter.split_text(file_text)
+    new_documents = [
+        Document(page_content=chunked_text, metadata={"doc_title": txt_path, "chunk_num": i})
+        for i, chunked_text in enumerate(texts)
+    ]
+    vector_store.add_documents(new_documents)
+
+# Ingest initial data function
 def ingest_data():
-    files = os.listdir("../Aihacks/txt_files")
+    files = os.listdir("../../Aihacks/txt_files")
     file_texts = []
     for file in files:
-        with open(f"../Aihacks/txt_files/{file}") as f:
+        with open(f"../../Aihacks/txt_files/{file}") as f:
             file_text = f.read()
         text_splitter = CharacterTextSplitter.from_tiktoken_encoder(
-            chunk_size=512, chunk_overlap=64, 
+            chunk_size=512, chunk_overlap=64
         )
         texts = text_splitter.split_text(file_text)
         for i, chunked_text in enumerate(texts):
@@ -52,6 +71,7 @@ def ingest_data():
     )
     return vector_store
 
+# Initialize FAISS vector store
 vector_store = ingest_data()
 retriever = vector_store.as_retriever()
 llm = OctoAIEndpoint(
@@ -86,38 +106,21 @@ def ask():
     answer = chain.invoke(question)
     return jsonify({'answer': answer})
 
-def scrape_website(url):
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    # Assuming the links are in <a> tags
-    links = [a['href'] for a in soup.find_all('a', href=True)]
-    return links
-
-def process_new_links(links):
-    for link in links:
-        response = requests.get(link)
-        text = response.text
-        text_splitter = CharacterTextSplitter.from_tiktoken_encoder(
-            chunk_size=512, chunk_overlap=64,
-        )
-        texts = text_splitter.split_text(text)
-        new_documents = [
-            Document(page_content=chunked_text, metadata={"doc_title": link, "chunk_num": i})
-            for i, chunked_text in enumerate(texts)
-        ]
-        vector_store.add_documents(new_documents)
-
 def check_for_new_links():
     urls_to_monitor = [
-        'http://127.0.0.1:5000',  # Replace with actual URLs
+        'http://127.0.0.1:8080',  # Replace with actual URLs
     ]
     for url in urls_to_monitor:
         new_links = scrape_website(url)
-        process_new_links(new_links)
+        for link in new_links:
+            # Create a unique text file name based on the link
+            txt_path = f"../../Aihacks/txt_files/{link.split('/')[-1]}.txt"
+            fetch_and_save_content(link, txt_path)
+            process_new_text_file(txt_path)
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=check_for_new_links, trigger="interval", minutes=10)
 scheduler.start()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=8080)
