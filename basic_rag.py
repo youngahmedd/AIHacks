@@ -10,9 +10,32 @@
 # %%
 from dotenv import load_dotenv
 import os
+import PyPDF2
 
 load_dotenv()
 OCTOAI_API_TOKEN = os.environ["OCTOAI_API_TOKEN"]
+
+# %%
+"""
+# change pdf to textfile
+"""
+
+def pdf_to_text(pdf_path, txt_path):
+    # Open the PDF file
+    with open(pdf_path, 'rb') as pdf_file:
+        # Create a PDF reader object
+        pdf_reader = PyPDF2.PdfFileReader(pdf_file)
+        
+        # Open the text file in write mode
+        with open(txt_path, 'w') as text_file:
+            # Iterate through each page in the PDF
+            for page_num in range(pdf_reader.numPages):
+                # Get the page
+                page = pdf_reader.getPage(page_num)
+                # Extract the text from the page
+                text = page.extract_text()
+                # Write the text to the text file
+                text_file.write(text)
 
 # %%
 """
