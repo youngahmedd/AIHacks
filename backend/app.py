@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, Response, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
@@ -19,6 +19,11 @@ app = Flask(__name__)
 CORS(app)
 load_dotenv()
 OCTOAI_API_TOKEN = os.environ["OCTOAI_API_TOKEN"]
+
+@app.before_request
+def basic_authentication():
+    if request.method.lower() == 'options':
+        return Response()
 
 # Function to scrape website for new links
 def scrape_website(url):
@@ -99,11 +104,16 @@ chain = (
 def index():
     return "Hello, this is the backend for the AI-powered Q&A."
 
-@app.route('/ask', methods=['POST'])
+
+@app.route('/ask', methods=['GET', 'POST', "OPTIONS"])
 def ask():
+    print("made it!")
     data = request.get_json()
+    print(data)
     question = data.get('question')
+    print("question")
     answer = chain.invoke(question)
+    print("answer", answer)
     return jsonify({'answer': answer})
 
 def check_for_new_links():

@@ -96,34 +96,45 @@ class ChatApp extends Component {
     this.onChange = this.onChange.bind(this);
     this.addMessageBox = this.addMessageBox.bind(this);
   }
-  
 
-  addMessageBox(enter=true){
+  async addMessageBox(enter=true){
     let messages = this.state.messages;
     let current_message = this.state.current_message;
     console.log(this.state);
     if(current_message && enter){
       messages = [...messages, {"message":current_message}];
-      fetch("http://localhost:5000?message=" + current_message)
-      .then(res => res.json())
-      .then(
-        (result) => {
-          console.log(result);
-          this.setState({
-            messages: [...messages, {"message":result["message"], "isbotmessage":true}]
-          });
-        },
-        (error) => {
-          //do nothing for now
-        }
-      );
-      current_message = ""
-    }  
-    this.setState({
-      current_message: current_message,
-      messages
-    });
+      this.setState({
+        current_message: "",
+        messages
+      });
 
+      console.log("PLEASE!")
+      
+      try {
+        const response = await fetch("http://127.0.0.1:5000/ask", {
+          method: "POST",
+          //mode: 'no-cors', // Make a request that doesn't require accessing the response
+          body: JSON.stringify({
+            question: current_message
+          }),
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+        if(response.ok){
+          const result = await response.json();
+          console.log("result answer")
+          this.setState({
+            messages: [...messages, {"message":result["answer"], "isbotmessage":true}]
+          });
+          console.log("HELLO" + result)
+        } else {
+          console.error("Server error:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Fetch error:", error);
+      }
+    }  
   }
 
   handleClick(){
@@ -136,7 +147,7 @@ class ChatApp extends Component {
     });  
   }
 
-    _handleKeyPress(e) {
+  _handleKeyPress(e) {
     let enter_pressed = false;
     if(e.key === "Enter"){
       enter_pressed = true;
@@ -160,7 +171,5 @@ class ChatApp extends Component {
     );
   }
 }
-
-
 
 export default ChatApp;
